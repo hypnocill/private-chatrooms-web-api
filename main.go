@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	appHttp "github.com/hypnocill/my-private-chatrooms/api/http"
 )
@@ -12,12 +11,5 @@ import (
 func main() {
 	fmt.Println("up and running")
 	appHttp.SetupRoutes()
-
-	port := os.Getenv("PORT")
-	fmt.Println("redis")
-	fmt.Println(os.Getenv("REDISTOGO_URL"))
-	if port == "" {
-		port = "5000"
-	}
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	log.Fatal(http.ListenAndServe(":5000", nil))
 }
