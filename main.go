@@ -14,8 +14,8 @@ func main() {
 	appHttp.SetupRoutes()
 
 	port := os.Getenv("PORT")
-	fmt.Println("port")
-	fmt.Println(port)
+	fmt.Println("redis")
+	fmt.Println(os.Getenv("REDISTOGO_URL"))
 	if port == "" {
 		port = "5000"
 	}
