@@ -14,6 +14,8 @@ func main() {
 	appHttp.SetupRoutes()
 
 	port := os.Getenv("PORT")
+	fmt.Println("port")
+	fmt.Println(port)
 	if port != "" {
 		port = "5000"
 	}
