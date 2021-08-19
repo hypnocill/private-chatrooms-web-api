@@ -16,7 +16,7 @@ func main() {
 	port := os.Getenv("PORT")
 	fmt.Println("port")
 	fmt.Println(port)
-	if port != "" {
+	if port == "" {
 		port = "5000"
 	}
 	log.Fatal(http.ListenAndServe(":"+port, nil))
