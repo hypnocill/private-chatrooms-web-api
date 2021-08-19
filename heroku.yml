@@ -1,0 +1,8 @@
+setup:
+  addons:
+    - plan: redistogo:nano
+      as: redis
+  config:
+build:
+  docker:
+    web: Dockerfile
