@@ -11,4 +11,4 @@ RUN go build -o main .
 ## our newly created binary executable
 CMD ["/api/main"]
 
-EXPOSE 5000
+# EXPOSE 5000
