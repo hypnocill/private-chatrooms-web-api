@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/go-redis/redis/v8"
@@ -16,7 +17,7 @@ func OpenRedisConnection() *redis.Client {
 	if portEnv := os.Getenv("REDIS_PORT"); portEnv != "" {
 		port = portEnv
 	}
-
+	fmt.Println(host + ":" + port)
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     host + ":" + port,
 		Password: "", // no password set (add password)
