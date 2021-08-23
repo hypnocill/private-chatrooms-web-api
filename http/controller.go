@@ -28,11 +28,9 @@ func createRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	chatroomUrl := r.URL.Host + fmt.Sprintf(ROUTE_ROOM_JOIN, chatroomId)
-
 	responseStruct := struct {
-		Url string
-	}{Url: chatroomUrl}
+		Id string
+	}{Id: chatroomId}
 
 	payload, err := json.Marshal(responseStruct)
 	if err != nil {
