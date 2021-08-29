@@ -67,7 +67,7 @@ func streamMessagesFromUserToChatroomChannel(conn *websocket.Conn, rdbPublisher 
 			break
 		}
 
-		payload := NewMessagePayload(username, string(message), MESSAGE_CATEGORY_TEXT)
+		payload := NewMessagePayload(username, string(message))
 		payloadJson, _ := payload.toJson()
 		rdbPublisher.Publish(ctx, roomId, payloadJson)
 	}
