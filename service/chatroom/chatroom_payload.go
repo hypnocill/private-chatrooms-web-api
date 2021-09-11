@@ -3,12 +3,14 @@ package chatroom
 import "encoding/json"
 
 type ChatroomPayload struct {
-	Id    string
-	Topic string
+	PayloadType PAYLOAD_TYPE
+	Id          string
+	Topic       string
+	Users       map[string]struct{}
 }
 
-func NewChatroomPayload(id string, topic string) *ChatroomPayload {
-	payload := ChatroomPayload{Id: id, Topic: topic}
+func NewChatroomPayload(id string, topic string, users map[string]struct{}, payloadType PAYLOAD_TYPE) *ChatroomPayload {
+	payload := ChatroomPayload{Id: id, Topic: topic, Users: users, PayloadType: payloadType}
 
 	return &payload
 }

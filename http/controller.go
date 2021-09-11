@@ -13,6 +13,7 @@ import (
 
 const (
 	ROOM_ID                = "room_id"
+	USERNAME               = "username"
 	USERNAME_INPUT_TIMEOUT = time.Minute * 5
 )
 
@@ -49,17 +50,8 @@ func joinRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conn.SetReadDeadline(time.Now().Add(USERNAME_INPUT_TIMEOUT))
-	_, message, err := conn.ReadMessage()
-
-	if err != nil {
-		http.Error(w, "Error while waiting for username input", http.StatusBadRequest)
-		conn.Close()
-		return
-	}
-
-	roomId := mux.Vars(r)[ROOM_ID]
-	username := string(message)
+	roomId := mux.Vars(r)[ROOM_ID]    //validate
+	username := mux.Vars(r)[USERNAME] //validate
 
 	roomError := chatroom.Join(conn, roomId, username)
 
@@ -68,6 +60,12 @@ func joinRoom(w http.ResponseWriter, r *http.Request) {
 		conn.Close()
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	resp := make(map[string]string)
+	resp["message"] = "Status OK"
+	jsonResp, _ := json.Marshal(resp)
+	w.Write(jsonResp)
 }
 
 var upgrader = websocket.Upgrader{

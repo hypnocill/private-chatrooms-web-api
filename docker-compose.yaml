@@ -1,0 +1,36 @@
+version: "2"
+# For use with the private chatrooms projects (web api, web frontned)
+# This compose file should be place in a folder where both project repos are present
+services:
+  api:
+    build:
+      context: ./private-chatrooms-web-api 
+      dockerfile: Dockerfile.development
+    ports:
+     - "5000:5000"
+    volumes:
+     - ./private-chatrooms-web-api:/api
+    links:
+     - redis
+    environment: 
+      CHOKIDAR_USEPOLLING: "true"
+
+  redis:
+    image: redis:alpine
+    expose:
+      - "6379"
+
+  webfrontend:
+    restart: always
+    build:
+      context: ./private-chatrooms-web-frontend
+      dockerfile: Dockerfile.development
+    ports:
+      - '3000:3000'
+    volumes: 
+      - ./private-chatrooms-web-frontend:/webfrontend
+      - /webfrontend/node_modules
+    depends_on: 
+      - api
+    environment:
+      CHOKIDAR_USEPOLLING: "true"

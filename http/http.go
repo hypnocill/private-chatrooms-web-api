@@ -11,7 +11,7 @@ import (
 
 const (
 	ROUTE_INDEX       = "/"
-	ROUTE_ROOM_JOIN   = "/room/join/%s"
+	ROUTE_ROOM_JOIN   = "/room/join/%s/%s"
 	ROUTE_ROOM_CREATE = "/room/create"
 )
 
@@ -19,7 +19,7 @@ func Start() {
 	router := mux.NewRouter()
 
 	router.HandleFunc(ROUTE_INDEX, index).Methods("GET")
-	router.HandleFunc(fmt.Sprintf(ROUTE_ROOM_JOIN, "{room_id}"), joinRoom).Methods("GET")
+	router.HandleFunc(fmt.Sprintf(ROUTE_ROOM_JOIN, "{room_id}", "{username}"), joinRoom).Methods("GET")
 	router.HandleFunc(ROUTE_ROOM_CREATE, createRoom).Methods("GET")
 
 	http.Handle(ROUTE_INDEX, router)

@@ -2,6 +2,7 @@ package chatroom
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log"
 	"strconv"
@@ -26,9 +27,8 @@ func Create() (string, error) {
 
 	roomId := makeRandomString()
 
-	chatroomPayload := NewChatroomPayload(roomId, "")
+	chatroomPayload := NewChatroomPayload(roomId, "", make(map[string]struct{}), PAYLOAD_TYPE_CHATROOM)
 	chatroomPayloadJson, _ := chatroomPayload.toJson() //handle error
-
 	rdb.Set(ctx, roomId, chatroomPayloadJson, DEFAULT_EXPIRATION_TIME)
 
 	return roomId, nil
@@ -46,6 +46,23 @@ func Join(conn *websocket.Conn, roomId string, username string) error {
 	if chatroomPayloadJson.Err() == redis.Nil {
 		return errors.New("room does not exist")
 	}
+
+	var chatroomPayload ChatroomPayload
+	chatroomPayloadBytes, _ := chatroomPayloadJson.Bytes()
+	_ = json.Unmarshal(chatroomPayloadBytes, &chatroomPayload)
+
+	_, userExists := chatroomPayload.Users[username]
+
+	if userExists {
+		return errors.New("username is taken")
+	}
+
+	var Empty struct{}
+	chatroomPayload.Users[username] = Empty
+	newChatroomPayloadJson, _ := chatroomPayload.toJson()
+
+	rdbPublisher.Set(ctx, roomId, newChatroomPayloadJson, DEFAULT_EXPIRATION_TIME)
+	rdbPublisher.Publish(ctx, roomId, newChatroomPayloadJson)
 
 	rdbSubscriber := cache.OpenRedisConnection().Subscribe(ctx, roomId)
 
@@ -67,7 +84,7 @@ func streamMessagesFromUserToChatroomChannel(conn *websocket.Conn, rdbPublisher 
 			break
 		}
 
-		payload := NewMessagePayload(username, string(message))
+		payload := NewMessagePayload(username, string(message), PAYLOAD_TYPE_MESSAGE)
 		payloadJson, _ := payload.toJson()
 		rdbPublisher.Publish(ctx, roomId, payloadJson)
 	}
