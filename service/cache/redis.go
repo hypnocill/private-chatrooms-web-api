@@ -32,6 +32,7 @@ func OpenRedisConnection() *redis.Client {
 	databaseStr, _ := strconv.Atoi(database)
 
 	fmt.Println(host + ":" + port)
+	fmt.Println(databaseStr)
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     host + ":" + port,
 		Password: password,    // no password set (add password)
