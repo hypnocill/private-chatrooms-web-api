@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -29,5 +30,16 @@ func Start() {
 	origins := handlers.AllowedOrigins([]string{"*"})
 
 	handlers := handlers.CORS(credentials, methods, origins)(router)
-	log.Fatal(http.ListenAndServe(":5000", handlers))
+
+	port := ":" + getPort()
+	log.Fatal(http.ListenAndServe(port, handlers))
+}
+
+func getPort() string {
+	port := "5000"
+	if portEnv := os.Getenv("PORT"); portEnv != "" {
+		port = portEnv
+	}
+
+	return port
 }
