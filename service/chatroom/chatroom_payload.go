@@ -7,10 +7,11 @@ type ChatroomPayload struct {
 	Id          string
 	Topic       string
 	Users       map[string]struct{}
+	Passowrd    string
 }
 
-func NewChatroomPayload(id string, topic string, users map[string]struct{}, payloadType PAYLOAD_TYPE) *ChatroomPayload {
-	payload := ChatroomPayload{Id: id, Topic: topic, Users: users, PayloadType: payloadType}
+func NewChatroomPayload(id string, topic string, users map[string]struct{}, password string) *ChatroomPayload {
+	payload := ChatroomPayload{Id: id, Topic: topic, Users: users, PayloadType: PAYLOAD_TYPE_CHATROOM, Passowrd: password}
 
 	return &payload
 }

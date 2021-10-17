@@ -17,12 +17,62 @@ const (
 	USERNAME_INPUT_TIMEOUT = time.Minute * 5
 )
 
+type CreateRoomInput struct {
+	Passowrd string `json:"password"`
+}
+
+type AuthRoomInput struct {
+	RoomId   string `json:"roomId"`
+	Passowrd string `json:"password"`
+}
+
 func index(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Private Chatrooms v1")
 }
 
+func authRoom(w http.ResponseWriter, r *http.Request) {
+	var authRoomInput AuthRoomInput
+	password := ""
+	roomId := ""
+
+	if err := json.NewDecoder(r.Body).Decode(&authRoomInput); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	} else {
+		password = authRoomInput.Passowrd
+		roomId = authRoomInput.RoomId
+	}
+
+	authToken, err := chatroom.Auth(roomId, password)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	responseStruct := struct {
+		Token string
+	}{Token: authToken}
+
+	payload, err := json.Marshal(responseStruct)
+	if err != nil {
+		http.Error(w, "Could not authenticate", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(payload)
+}
+
 func createRoom(w http.ResponseWriter, r *http.Request) {
-	chatroomId, err := chatroom.Create()
+	var createRoomInput CreateRoomInput
+	password := ""
+	if err := json.NewDecoder(r.Body).Decode(&createRoomInput); err != nil {
+		fmt.Println(err)
+	} else {
+		password = createRoomInput.Passowrd
+	}
+
+	chatroomId, err := chatroom.Create(password)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -53,11 +103,22 @@ func joinRoom(w http.ResponseWriter, r *http.Request) {
 	roomId := mux.Vars(r)[ROOM_ID]    //validate
 	username := mux.Vars(r)[USERNAME] //validate
 
-	roomError := chatroom.Join(conn, roomId, username)
+	_, authPayloadJson, _ := conn.ReadMessage()
+
+	var authPayload chatroom.AuthPayload
+	_ = json.Unmarshal(authPayloadJson, &authPayload)
+	hashedPassword := authPayload.Message
+
+	roomError := chatroom.Join(conn, roomId, username, hashedPassword)
 
 	if roomError != nil {
-		http.Error(w, roomError.Error(), http.StatusBadRequest)
+		fmt.Println(roomError.Error())
+		// http.Error(w, roomError.Error(), http.StatusBadRequest)
+		cm := websocket.FormatCloseMessage(websocket.CloseNormalClosure, roomError.Error())
+		conn.WriteMessage(websocket.CloseMessage, cm)
+		time.Sleep(time.Second * 2)
 		conn.Close()
+
 		return
 	}
 

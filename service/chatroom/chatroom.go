@@ -2,8 +2,11 @@ package chatroom
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -17,7 +20,7 @@ var ctx = context.Background()
 
 const DEFAULT_EXPIRATION_TIME = time.Hour
 
-func Create() (string, error) {
+func Auth(roomId string, password string) (string, error) {
 	rdb := cache.OpenRedisConnection()
 
 	info := rdb.Ping(ctx)
@@ -25,16 +28,49 @@ func Create() (string, error) {
 		return "", errors.New("could not establish connection")
 	}
 
-	roomId := makeRandomString()
+	chatroomPayloadJson := rdb.Get(ctx, roomId)
+	if chatroomPayloadJson.Err() == redis.Nil {
+		return "", errors.New("room does not exist")
+	}
 
-	chatroomPayload := NewChatroomPayload(roomId, "", make(map[string]struct{}), PAYLOAD_TYPE_CHATROOM)
+	var chatroomPayload ChatroomPayload
+	chatroomPayloadBytes, _ := chatroomPayloadJson.Bytes()
+	_ = json.Unmarshal(chatroomPayloadBytes, &chatroomPayload)
+	fmt.Println("payload", chatroomPayload.Passowrd)
+	hashedPassword := sha256.Sum256([]byte(password))
+	encodedHashedPassword := hex.EncodeToString(hashedPassword[:])
+	fmt.Println("incoming password", encodedHashedPassword)
+
+	if chatroomPayload.Passowrd != encodedHashedPassword {
+		return "", errors.New("password is wrong")
+	}
+
+	return encodedHashedPassword, nil
+}
+
+func Create(password string) (string, error) {
+	rdb := cache.OpenRedisConnection()
+
+	info := rdb.Ping(ctx)
+	if info.Err() != nil {
+		return "", errors.New("could not establish connection")
+	}
+
+	// add salt
+	hashedPassword := sha256.Sum256([]byte(password))
+	encodedHashedPassword := hex.EncodeToString(hashedPassword[:])
+
+	roomId := makeRandomString()
+	emptyUsers := make(map[string]struct{})
+
+	chatroomPayload := NewChatroomPayload(roomId, "", emptyUsers, encodedHashedPassword)
 	chatroomPayloadJson, _ := chatroomPayload.toJson() //handle error
 	rdb.Set(ctx, roomId, chatroomPayloadJson, DEFAULT_EXPIRATION_TIME)
 
 	return roomId, nil
 }
 
-func Join(conn *websocket.Conn, roomId string, username string) error {
+func Join(conn *websocket.Conn, roomId string, username string, hashedPassword string) error {
 	rdbPublisher := cache.OpenRedisConnection()
 
 	info := rdbPublisher.Ping(ctx)
@@ -47,9 +83,16 @@ func Join(conn *websocket.Conn, roomId string, username string) error {
 		return errors.New("room does not exist")
 	}
 
+	// Move this adding of a User to chatroom to 'chatroom_payload'
 	var chatroomPayload ChatroomPayload
 	chatroomPayloadBytes, _ := chatroomPayloadJson.Bytes()
 	_ = json.Unmarshal(chatroomPayloadBytes, &chatroomPayload)
+	fmt.Println("payload", chatroomPayload.Passowrd)
+	fmt.Println("incoming password", hashedPassword)
+
+	if chatroomPayload.Passowrd != hashedPassword {
+		return errors.New("password is wrong")
+	}
 
 	_, userExists := chatroomPayload.Users[username]
 
@@ -59,17 +102,27 @@ func Join(conn *websocket.Conn, roomId string, username string) error {
 
 	var Empty struct{}
 	chatroomPayload.Users[username] = Empty
+
 	newChatroomPayloadJson, _ := chatroomPayload.toJson()
 
 	rdbPublisher.Set(ctx, roomId, newChatroomPayloadJson, DEFAULT_EXPIRATION_TIME)
-	rdbPublisher.Publish(ctx, roomId, newChatroomPayloadJson)
 
 	rdbSubscriber := cache.OpenRedisConnection().Subscribe(ctx, roomId)
+
+	conn.SetReadDeadline(time.Now().Add(5 * time.Minute)) //adjust
 
 	go streamMessagesFromUserToChatroomChannel(conn, rdbPublisher, roomId, username)
 	go streamMessagesFromChatroomChannelToUser(conn, rdbSubscriber, 1)
 
+	notifyChatroomForNewUser(rdbPublisher, chatroomPayload, roomId)
+
 	return nil
+}
+
+func notifyChatroomForNewUser(rdbPublisher *redis.Client, chatroomPayload ChatroomPayload, roomId string) {
+	chatroomPayload.Passowrd = "***"
+	newChatroomPayloadJson, _ := chatroomPayload.toJson()
+	rdbPublisher.Publish(ctx, roomId, newChatroomPayloadJson)
 }
 
 func streamMessagesFromUserToChatroomChannel(conn *websocket.Conn, rdbPublisher *redis.Client, roomId string, username string) {
@@ -80,11 +133,12 @@ func streamMessagesFromUserToChatroomChannel(conn *websocket.Conn, rdbPublisher 
 
 		if err != nil {
 			rdbPublisher.Close()
+			// remove user from chatroom payload here
 			log.Println("Error during message reading:", err)
 			break
 		}
 
-		payload := NewMessagePayload(username, string(message), PAYLOAD_TYPE_MESSAGE)
+		payload := NewMessagePayload(username, string(message))
 		payloadJson, _ := payload.toJson()
 		rdbPublisher.Publish(ctx, roomId, payloadJson)
 	}

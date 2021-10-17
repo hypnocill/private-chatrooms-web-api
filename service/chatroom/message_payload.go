@@ -8,8 +8,8 @@ type MessagePayload struct {
 	Message     string
 }
 
-func NewMessagePayload(username string, message string, payloadType PAYLOAD_TYPE) *MessagePayload {
-	payload := MessagePayload{Username: username, Message: message, PayloadType: payloadType}
+func NewMessagePayload(username string, message string) *MessagePayload {
+	payload := MessagePayload{Username: username, Message: message, PayloadType: PAYLOAD_TYPE_MESSAGE}
 
 	return &payload
 }
