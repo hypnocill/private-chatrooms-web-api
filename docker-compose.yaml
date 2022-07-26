@@ -14,7 +14,7 @@ services:
       CHOKIDAR_USEPOLLING: "true"
 
   redis:
-    image: redis:alpine
+    image: 7.0.4-alpine
     expose:
       - "6379"
 
