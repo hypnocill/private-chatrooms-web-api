@@ -17,7 +17,6 @@ $ docker-compose up
 4. Create room
 ```
 $ curl -X POST http://localhost:5000/room/create  -H 'Content-Type: application/json'  -d '{"password":"TEST_PASSWORD"}';
-
 ```
 response:
 ```
