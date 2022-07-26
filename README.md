@@ -26,7 +26,6 @@ response:
 5. Authenticate for the created room (Take the ID from the response of the previous step)
 ```
 $ curl -X POST http://localhost:5000/room/auth  -H 'Content-Type: application/json'  -d '{"roomId":"1658790109809","password":"TEST_PASSWORD"}';
-
 ```
 response:
 ```
