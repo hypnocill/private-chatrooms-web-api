@@ -41,8 +41,10 @@ The first message sent to the room should be the authentication token with the f
 ```
 {"PayloadType":0,"Message":"5fd924625f6ab16a19cc9807c7c506ae1813490e4ba675f843d5a10e0baacdb8"}
 ```
-After that, connection and authentication for the room should be established and normal messages can be sent
+After that, connection and authentication for the room should be established and normal messages can be sent.
 Each user will be notified when a new user joins the room
+See '/service/chatroom/payload_types.go' for the different types of payloads and how they are used in the project.
+
 ![Alt text](/res/chat.png?raw=true "Example chat with Simple Websocket Client")
 
 
