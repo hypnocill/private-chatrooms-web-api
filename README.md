@@ -14,7 +14,7 @@ $ docker-compose up
 
 3. Opening http://localhost:5000/ should show "Private Chatrooms v1" text if the project is running
 
-4. Create room
+4. Create room (make sure to use the received params from the 'response' parts below in the example requests)
 ```
 $ curl -X POST http://localhost:5000/room/create  -H 'Content-Type: application/json'  -d '{"password":"TEST_PASSWORD"}';
 ```
